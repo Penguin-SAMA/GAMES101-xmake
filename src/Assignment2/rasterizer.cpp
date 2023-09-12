@@ -43,6 +43,21 @@ auto to_vec4(const Eigen::Vector3f& v3, float w = 1.0f)
 static bool insideTriangle(int x, int y, const Vector3f* _v)
 {   
     // TODO : Implement this function to check if the point (x, y) is inside the triangle represented by _v[0], _v[1], _v[2]
+    Eigen::Vector2f p(x,y);
+
+    Eigen::Vector2f A, B, C;
+    A = _v[0].head(2) - _v[1].head(2);
+    B = _v[1].head(2) - _v[2].head(2);
+    C = _v[2].head(2) - _v[0].head(2);
+
+    Eigen::Vector2f AP, BP, CP;
+    AP = p - _v[0].head(2);
+    BP = p - _v[1].head(2);
+    CP = p - _v[2].head(2);
+
+    return AP[0] * C[1] - AP[1] * C[0] > 0 &&
+           BP[0] * A[1] - BP[1] * A[0] > 0 &&
+           CP[0] * B[1] - CP[1] * B[0] > 0;
 }
 
 static std::tuple<float, float, float> computeBarycentric2D(float x, float y, const Vector3f* v)
@@ -108,6 +123,15 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     
     // TODO : Find out the bounding box of current triangle.
     // iterate through the pixel and find if the current pixel is inside the triangle
+    float min_x = std::min(std::min(v[0].x(), v[1].x()), v[2].x());
+    float max_x = std::max(std::max(v[0].x(), v[1].x()), v[2].x());
+    float min_y = std::min(std::min(v[0].y(), v[1].y()), v[2].y());
+    float max_y = std::max(std::max(v[0].y(), v[1].y()), v[2].y());
+
+    min_x = static_cast<int>(std::floor(min_x));
+    min_y = static_cast<int>(std::floor(min_y));
+    max_x = static_cast<int>(std::ceil(max_x));
+    max_y = static_cast<int>(std::ceil(max_y));
 
     // If so, use the following code to get the interpolated z value.
     //auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
