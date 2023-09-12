@@ -36,6 +36,15 @@ brew install gcc xmake eigen opencv
 
 安装成功后，回到上面第三步
 
+mac里需要在`xmake.lua`中添加一行
+
+```lua
+add_includedirs("/opt/homebrew/Cellar/opencv/4.8.0_1/include/opencv4")
+
+```
+
+
+
 # 注意事项
 
 * 所有作业文档在 doc 目录
