@@ -6,8 +6,8 @@
 #include <algorithm>
 #include <vector>
 #include "rasterizer.hpp"
+#include "Eigen/src/Core/Matrix.h"
 #include <opencv2/opencv.hpp>
-#include <math.h>
 
 
 rst::pos_buf_id rst::rasterizer::load_positions(const std::vector<Eigen::Vector3f> &positions)
@@ -133,13 +133,64 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     max_x = static_cast<int>(std::ceil(max_x));
     max_y = static_cast<int>(std::ceil(max_y));
 
-    // If so, use the following code to get the interpolated z value.
-    //auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
-    //float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-    //float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-    //z_interpolated *= w_reciprocal;
+    bool MSAA = true;
 
-    // TODO : set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
+    if (MSAA) {
+        std::vector<Eigen::Vector2f> pos {
+            {0.25, 0.25},
+            {0.75, 0.25},
+            {0.25, 0.75},
+            {0.75, 0.75}
+        };
+
+        for (int i = min_x; i <= max_x; ++i) {
+            for (int j = min_y; j<= max_y; ++j) {
+                int count = 0;
+                float minDepth = FLT_MAX;
+                for (int MSAA_4 = 0; MSAA_4 < 4; ++MSAA_4) {
+                    if (insideTriangle(static_cast<float>(i+pos[MSAA_4][0]), static_cast<float>(j+pos[MSAA_4][1]), t.v)) {
+                        auto[alpha, beta, gamma] = computeBarycentric2D(static_cast<float>(i + pos[MSAA_4][0]), static_cast<float>(j + pos[MSAA_4][1]), t.v);
+	                    float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+	                    float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+	                    z_interpolated *= w_reciprocal;
+
+                        minDepth = std::min(minDepth, z_interpolated);
+                        ++count;
+                    }
+                }
+
+                if (count) {
+                    if (depth_buf[get_index(i, j)] > minDepth) {
+                        depth_buf[get_index(i, j)] = minDepth;
+
+                        Eigen::Vector3f color = t.getColor() * (count / 4.0);
+                        Eigen::Vector3f point;
+                        point << static_cast<float>(i), static_cast<float>(j), minDepth;
+                        set_pixel(point, color);
+                    }
+                }
+            } 
+        }
+    } else {
+        for (int i = min_x; i <= max_x; ++i) {
+            for (int j = min_y; j <= max_y; ++j) {
+                if (insideTriangle(static_cast<float>(i + 0.5), static_cast<float>(j+0.5), t.v)) {
+                    auto [alpha, beta, gamma] = computeBarycentric2D(static_cast<float>(i + 0.5), static_cast<float>(j + 0.5), t.v);
+					float w_reciprocal = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+					float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+					z_interpolated *= w_reciprocal;
+
+                    if (depth_buf[get_index(i, j)] > z_interpolated) {
+                        depth_buf[get_index(i, j)] = z_interpolated;
+                        Eigen::Vector3f color = t.getColor();
+                        Eigen::Vector3f point;
+                        point << static_cast<float>(i), static_cast<float>(j), z_interpolated;
+                        set_pixel(point, color);
+                    }
+                }
+            }
+        }
+    }
 }
 
 void rst::rasterizer::set_model(const Eigen::Matrix4f& m)

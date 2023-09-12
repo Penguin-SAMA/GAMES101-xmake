@@ -16,4 +16,6 @@ set_kind("binary")
 add_packages("opencv", "eigen")
 add_files("*.cpp")
 set_rundir("$(projectdir)")
-add_includedirs("/opt/homebrew/Cellar/opencv/4.8.0_6/include/opencv4/")
+if is_os("macosx") then 
+	add_includedirs("/opt/homebrew/Cellar/opencv/4.8.0_6/include/opencv4/")
+end
