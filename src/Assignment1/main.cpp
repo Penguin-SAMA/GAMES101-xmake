@@ -4,7 +4,6 @@
 #include <eigen3/Eigen/Eigen>
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include <sys/_types/_sigaltstack.h>
 
 constexpr double MY_PI = 3.1415926;
 
