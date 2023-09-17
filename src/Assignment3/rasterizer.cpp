@@ -273,8 +273,7 @@ void rst::rasterizer::rasterize_triangle(
                                     t.color[2], 1);
                     auto interpolated_normal =
                         interpolate(alpha, beta, gamma, t.normal[0],
-                                    t.normal[1], t.normal[2], 1)
-                            .normalized();
+                                    t.normal[1], t.normal[2], 1);
                     auto interpolated_texcoords =
                         interpolate(alpha, beta, gamma, t.tex_coords[0],
                                     t.tex_coords[1], t.tex_coords[2], 1);
